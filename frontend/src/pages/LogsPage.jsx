@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ResourcePage from './ResourcePage';
 import { Panel } from '../components/AppShell';
-import { SelectInput } from '../components/Forms';
 
 export default function LogsPage() {
   const { currentOrganizationId: organizationId } = useAuth();
