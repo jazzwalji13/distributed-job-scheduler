@@ -29,6 +29,7 @@ export default function DeadLetterPage() {
 
   const actions = [
     { label: 'Requeue', tone: 'danger', onClick: handleRequeue },
+    { label: 'Delete', tone: 'danger', onClick: handleDelete },
   ];
 
   if (!organizationId) {

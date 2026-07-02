@@ -554,6 +554,19 @@ async function requeueDeadLetter(user, jobId) {
   });
 }
 
+async function deleteJob(user, jobId) {
+  const job = await loadJob(jobId);
+  await verifyOrganizationAccess(user, job.organizationId);
+
+  return prisma.$transaction(async (tx) => {
+    await tx.deadLetterQueue.deleteMany({ where: { jobId } });
+    await tx.jobLog.deleteMany({ where: { jobId } });
+    await tx.jobExecution.deleteMany({ where: { jobId } });
+    await tx.scheduledJob.deleteMany({ where: { jobId } });
+    return tx.job.delete({ where: { id: jobId } });
+  });
+}
+
 async function recoverStaleJobs(timeoutMs = 60000) {
   const threshold = new Date(Date.now() - timeoutMs);
   const staleWorkers = await prisma.worker.findMany({
@@ -603,6 +616,7 @@ module.exports = {
   createRecurringJobRun,
   getDeadLetterJobs,
   requeueDeadLetter,
+  deleteJob,
   calculateRetryDelay,
   recoverStaleJobs
 };

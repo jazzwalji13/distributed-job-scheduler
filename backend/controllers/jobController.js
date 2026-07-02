@@ -5,7 +5,8 @@ const {
   loadJob,
   claimJobs,
   getJobLogs,
-  requeueDeadLetter
+  requeueDeadLetter,
+  deleteJob
 } = require('../services/jobService');
 const { parsePagination, buildPaginatedResponse } = require('../utils/pagination');
 
@@ -58,11 +59,17 @@ const requeue = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: { job } });
 });
 
+const remove = asyncHandler(async (req, res) => {
+  await deleteJob(req.user, req.validated.params.jobId);
+  res.status(204).send();
+});
+
 module.exports = {
   list,
   create,
   details,
   logs,
   claim,
-  requeue
+  requeue,
+  remove
 };
