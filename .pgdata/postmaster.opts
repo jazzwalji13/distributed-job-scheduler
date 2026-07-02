@@ -1,0 +1,1 @@
+C:/Program Files/PostgreSQL/17/bin/postgres.exe "-D" "d:/codity job/distributed-job-scheduler/.pgdata" "-p" "5433"

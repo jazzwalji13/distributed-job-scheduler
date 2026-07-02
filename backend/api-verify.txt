@@ -1,0 +1,5 @@
+REGISTER_OK|user20260702130047452@example.com|cmr36qjgb000odjuom924eryy
+LOGIN_OK|user20260702130047452@example.com
+PROJECT_OK|cmr36qjme000sdjuo3ymffg5d
+QUEUE_OK|cmr36qjmm000udjuot9swn1qg
+JOB_OK|cmr36qjmx000wdjuoskgyw1qy|QUEUED
