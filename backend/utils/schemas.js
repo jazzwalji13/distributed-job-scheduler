@@ -63,7 +63,7 @@ const organizationMemberSchema = z.object({
 
 const projectSchema = z.object({
   body: z.object({
-    organizationId: idSchema,
+    organizationId: idSchema.optional(),
     name: nameSchema,
     key: z.string().min(2).max(32),
     description: z.string().max(500).optional()
@@ -95,7 +95,7 @@ const projectListQuerySchema = z.object({
 
 const queueSchema = z.object({
   body: z.object({
-    organizationId: idSchema,
+    organizationId: idSchema.optional(),
     projectId: idSchema,
     retryPolicyId: idSchema.optional().nullable(),
     name: nameSchema,
@@ -154,7 +154,7 @@ const jobTypeSchema = z.enum(['IMMEDIATE', 'DELAYED', 'SCHEDULED', 'RECURRING', 
 
 const createJobSchema = z.object({
   body: z.object({
-    organizationId: idSchema,
+    organizationId: idSchema.optional(),
     projectId: idSchema,
     queueId: idSchema,
     retryPolicyId: idSchema.optional().nullable(),

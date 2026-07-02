@@ -38,12 +38,16 @@ async function listProjects(user, organizationId, pagination) {
 }
 
 async function createProject(user, data) {
-  await verifyOrganizationAccess(user, data.organizationId);
-  const key = await buildUniqueProjectKey(data.organizationId, data.key, data.name);
+  const organizationId = data.organizationId || user.organizationId;
+  if (!organizationId) {
+    throw new AppError('Organization ID is required', 400, 'ORGANIZATION_REQUIRED');
+  }
+  await verifyOrganizationAccess(user, organizationId);
+  const key = await buildUniqueProjectKey(organizationId, data.key, data.name);
 
   return prisma.project.create({
     data: {
-      organizationId: data.organizationId,
+      organizationId,
       createdById: user.id,
       name: data.name,
       key,

@@ -65,9 +65,14 @@ async function loadJob(jobId) {
 }
 
 async function createSingleJob(user, payload) {
-  await verifyOrganizationAccess(user, payload.organizationId);
+  const organizationId = payload.organizationId || user.organizationId;
+  if (!organizationId) {
+    throw new AppError('Organization ID is required', 400, 'ORGANIZATION_REQUIRED');
+  }
+  await verifyOrganizationAccess(user, organizationId);
+  payload = { ...payload, organizationId };
   const queue = await getQueueById(payload.queueId);
-  if (queue.organizationId !== payload.organizationId) {
+  if (queue.organizationId !== organizationId) {
     throw new AppError('Queue does not belong to the organization', 400, 'QUEUE_MISMATCH');
   }
 

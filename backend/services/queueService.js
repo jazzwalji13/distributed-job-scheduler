@@ -68,12 +68,16 @@ async function listQueues(user, filters, pagination) {
 }
 
 async function createQueue(user, data) {
-  await verifyOrganizationAccess(user, data.organizationId);
+  const organizationId = data.organizationId || user.organizationId;
+  if (!organizationId) {
+    throw new AppError('Organization ID is required', 400, 'ORGANIZATION_REQUIRED');
+  }
+  await verifyOrganizationAccess(user, organizationId);
   const slug = await buildUniqueQueueSlug(data.projectId, data.slug, data.name);
 
   return prisma.queue.create({
     data: {
-      organizationId: data.organizationId,
+      organizationId,
       projectId: data.projectId,
       retryPolicyId: data.retryPolicyId || null,
       name: data.name,

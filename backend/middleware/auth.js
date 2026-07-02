@@ -12,13 +12,20 @@ async function authenticate(req, res, next) {
 
   try {
     const payload = verifyAccessToken(token);
-    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      include: {
+        ownedOrganizations: { select: { id: true }, take: 1 },
+        memberships: { select: { organizationId: true }, take: 1 }
+      }
+    });
 
     if (!user) {
       return next(unauthorized('Invalid token subject'));
     }
 
-    req.user = user;
+    const organizationId = user.ownedOrganizations?.[0]?.id || user.memberships?.[0]?.organizationId || null;
+    req.user = { ...user, organizationId };
     req.tokenPayload = payload;
     return next();
   } catch (error) {
