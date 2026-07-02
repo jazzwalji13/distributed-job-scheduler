@@ -567,6 +567,24 @@ async function deleteJob(user, jobId) {
   });
 }
 
+async function updateJob(user, jobId, updates) {
+  const job = await loadJob(jobId);
+  await verifyOrganizationAccess(user, job.organizationId);
+
+  const allowed = {};
+  if (updates.priority !== undefined) allowed.priority = updates.priority;
+  if (updates.payload !== undefined) allowed.payload = updates.payload;
+  if (updates.maxAttempts !== undefined) allowed.maxAttempts = updates.maxAttempts;
+  if (updates.runAt !== undefined) allowed.runAt = new Date(updates.runAt);
+  if (updates.scheduledFor !== undefined) allowed.scheduledFor = new Date(updates.scheduledFor);
+  if (updates.shardKey !== undefined) allowed.shardKey = updates.shardKey;
+
+  return prisma.job.update({
+    where: { id: jobId },
+    data: allowed
+  });
+}
+
 async function recoverStaleJobs(timeoutMs = 60000) {
   const threshold = new Date(Date.now() - timeoutMs);
   const staleWorkers = await prisma.worker.findMany({
@@ -617,6 +635,7 @@ module.exports = {
   getDeadLetterJobs,
   requeueDeadLetter,
   deleteJob,
+  updateJob,
   calculateRetryDelay,
   recoverStaleJobs
 };

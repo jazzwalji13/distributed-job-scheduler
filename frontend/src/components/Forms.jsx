@@ -1,4 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
+
+const ToastContext = createContext(null);
+
+let toastId = 0;
+
+export function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+
+  const addToast = useCallback((message, type = 'info', durationMs = 3500) => {
+    const id = ++toastId;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), durationMs);
+  }, []);
+
+  const toast = {
+    success: (msg) => addToast(msg, 'success'),
+    error: (msg) => addToast(msg, 'error', 5000),
+    info: (msg) => addToast(msg, 'info')
+  };
+
+  return (
+    <ToastContext.Provider value={toast}>
+      {children}
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+        {toasts.map((t) => (
+          <div key={t.id} className={`pointer-events-auto max-w-sm rounded-2xl border px-4 py-3 text-sm font-medium shadow-2xl backdrop-blur-sm transition-all animate-[slideIn_0.25s_ease-out] ${
+            t.type === 'success' ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-100' :
+            t.type === 'error' ? 'border-rose-400/30 bg-rose-500/15 text-rose-100' :
+            'border-cyan-400/30 bg-cyan-500/15 text-cyan-100'
+          }`}>
+            {t.message}
+          </div>
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+export function useToast() {
+  const ctx = useContext(ToastContext);
+  if (!ctx) return { success: () => {}, error: () => {}, info: () => {} };
+  return ctx;
+}
 
 export function Modal({ open, onClose, title, children }) {
   useEffect(() => {

@@ -1,12 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ResourcePage from './ResourcePage';
 import { Panel } from '../components/AppShell';
-import { Modal, FormField, TextInput, TextArea, SubmitButton } from '../components/Forms';
+import { Modal, FormField, TextInput, TextArea, SubmitButton, useToast } from '../components/Forms';
 import api from '../api/client';
 
 export default function ProjectsPage() {
   const { currentOrganizationId: organizationId } = useAuth();
+  const toast = useToast();
   const [showCreate, setShowCreate] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [form, setForm] = useState({ name: '', key: '', description: '' });
@@ -32,17 +33,21 @@ export default function ProjectsPage() {
         await api.put(`/projects/${editingProject.id}`, {
           name: form.name, key: form.key, description: form.description || undefined
         });
+        toast.success('Project updated');
       } else {
         await api.post('/projects', {
           organizationId, name: form.name, key: form.key, description: form.description || undefined
         });
+        toast.success('Project created');
       }
       setShowCreate(false);
       setEditingProject(null);
       resetForm();
       setRefreshKey((k) => k + 1);
     } catch (err) {
-      setError(err.response?.data?.error?.message || err.message);
+      const msg = err.response?.data?.error?.message || err.message;
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -52,9 +57,10 @@ export default function ProjectsPage() {
     if (!window.confirm(`Delete project "${project.name}"? This cannot be undone.`)) return;
     try {
       await api.delete(`/projects/${project.id}`);
+      toast.success('Project deleted');
       setRefreshKey((k) => k + 1);
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.message);
+      toast.error(err.response?.data?.error?.message || err.message);
     }
   };
 

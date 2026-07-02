@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ResourcePage from './ResourcePage';
 import { Panel } from '../components/AppShell';
-import { Modal, FormField, TextInput, TextArea, SubmitButton } from '../components/Forms';
+import { Modal, FormField, TextInput, TextArea, SubmitButton, useToast } from '../components/Forms';
 import api from '../api/client';
 
 export default function QueuesPage() {
   const { currentOrganizationId: organizationId } = useAuth();
+  const toast = useToast();
   const [showCreate, setShowCreate] = useState(false);
   const [editingQueue, setEditingQueue] = useState(null);
   const [form, setForm] = useState({ name: '', slug: '', projectId: '', description: '', priority: '0', concurrencyLimit: '5' });
@@ -40,15 +41,19 @@ export default function QueuesPage() {
       if (editingQueue) {
         const { projectId, ...updateData } = payload;
         await api.put(`/queues/${editingQueue.id}`, updateData);
+        toast.success('Queue updated');
       } else {
         await api.post('/queues', payload);
+        toast.success('Queue created');
       }
       setShowCreate(false);
       setEditingQueue(null);
       resetForm();
       setRefreshKey((k) => k + 1);
     } catch (err) {
-      setError(err.response?.data?.error?.message || err.message);
+      const msg = err.response?.data?.error?.message || err.message;
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -58,20 +63,31 @@ export default function QueuesPage() {
     if (!window.confirm(`Delete queue "${queue.name}"?`)) return;
     try {
       await api.delete(`/queues/${queue.id}`);
+      toast.success('Queue deleted');
       setRefreshKey((k) => k + 1);
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.message);
+      toast.error(err.response?.data?.error?.message || err.message);
     }
   };
 
   const handlePause = async (row) => {
-    await api.post(`/queues/${row.id}/pause`, { reason: 'Paused from dashboard' });
-    setRefreshKey((k) => k + 1);
+    try {
+      await api.post(`/queues/${row.id}/pause`, { reason: 'Paused from dashboard' });
+      toast.success('Queue paused');
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || err.message);
+    }
   };
 
   const handleResume = async (row) => {
-    await api.post(`/queues/${row.id}/resume`);
-    setRefreshKey((k) => k + 1);
+    try {
+      await api.post(`/queues/${row.id}/resume`);
+      toast.success('Queue resumed');
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || err.message);
+    }
   };
 
   const actions = [

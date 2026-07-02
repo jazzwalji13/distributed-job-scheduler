@@ -2,18 +2,21 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ResourcePage from './ResourcePage';
 import { Panel } from '../components/AppShell';
+import { useToast } from '../components/Forms';
 import api from '../api/client';
 
 export default function DeadLetterPage() {
   const { currentOrganizationId: organizationId } = useAuth();
+  const toast = useToast();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleRequeue = async (row) => {
     try {
       await api.post(`/dead-letter/${row.jobId || row.job?.id}/requeue`);
+      toast.success('Job requeued');
       setRefreshKey((k) => k + 1);
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.message);
+      toast.error(err.response?.data?.error?.message || err.message);
     }
   };
 
@@ -21,9 +24,10 @@ export default function DeadLetterPage() {
     if (!window.confirm('Delete this dead-letter job permanently?')) return;
     try {
       await api.delete(`/jobs/${row.jobId || row.job?.id}`);
+      toast.success('Job deleted');
       setRefreshKey((k) => k + 1);
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.message);
+      toast.error(err.response?.data?.error?.message || err.message);
     }
   };
 

@@ -3,7 +3,9 @@ const {
   registerWorker,
   updateHeartbeat,
   listWorkers,
-  updateWorkerStatus
+  updateWorkerStatus,
+  updateWorker,
+  deleteWorker
 } = require('../services/workerService');
 const { parsePagination, buildPaginatedResponse } = require('../utils/pagination');
 
@@ -40,9 +42,21 @@ const status = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: { worker } });
 });
 
+const update = asyncHandler(async (req, res) => {
+  const worker = await updateWorker(req.validated.params.workerId, req.validated.body);
+  res.status(200).json({ success: true, data: { worker } });
+});
+
+const remove = asyncHandler(async (req, res) => {
+  await deleteWorker(req.validated.params.workerId);
+  res.status(204).send();
+});
+
 module.exports = {
   register,
   heartbeat,
   list,
-  status
+  status,
+  update,
+  remove
 };

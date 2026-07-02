@@ -1,7 +1,10 @@
 import ReactDOM from 'react-dom/client';
 import App from '../App.jsx';
+import { ToastProvider } from './components/Forms';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <App />
+  <ToastProvider>
+    <App />
+  </ToastProvider>
 );

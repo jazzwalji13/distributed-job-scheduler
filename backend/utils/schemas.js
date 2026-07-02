@@ -198,6 +198,20 @@ const jobParamsSchema = z.object({
   })
 });
 
+const updateJobSchema = z.object({
+  params: z.object({
+    jobId: idSchema
+  }),
+  body: z.object({
+    priority: z.coerce.number().int().min(-100).max(100).optional(),
+    payload: jobPayloadSchema.optional(),
+    maxAttempts: z.coerce.number().int().min(1).max(20).optional(),
+    runAt: z.coerce.date().optional(),
+    scheduledFor: z.coerce.date().optional(),
+    shardKey: z.string().max(120).optional().nullable()
+  })
+});
+
 const deadLetterListQuerySchema = paginationQuerySchema.extend({
   organizationId: idSchema
 });
@@ -243,6 +257,18 @@ const workerListQuerySchema = paginationQuerySchema.extend({
   status: z.enum(['ONLINE', 'DRAINING', 'OFFLINE']).optional()
 });
 
+const updateWorkerSchema = z.object({
+  params: z.object({
+    workerId: idSchema
+  }),
+  body: z.object({
+    name: nameSchema.optional(),
+    host: nameSchema.optional(),
+    capacity: z.coerce.number().int().positive().max(100).optional(),
+    version: z.string().max(50).optional()
+  })
+});
+
 const dashboardQuerySchema = z.object({
   query: z.object({
     organizationId: idSchema
@@ -270,12 +296,14 @@ module.exports = {
   createJobSchema,
   jobListQuerySchema,
   jobParamsSchema,
+  updateJobSchema,
   workerHeartbeatSchema,
   claimJobsSchema,
   workerRegisterSchema,
   workerIdParamSchema,
   workerStatusSchema,
   workerListQuerySchema,
+  updateWorkerSchema,
   dashboardQuerySchema,
   deadLetterListQuerySchema,
   deadLetterParamsSchema,

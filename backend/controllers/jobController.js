@@ -6,7 +6,8 @@ const {
   claimJobs,
   getJobLogs,
   requeueDeadLetter,
-  deleteJob
+  deleteJob,
+  updateJob
 } = require('../services/jobService');
 const { parsePagination, buildPaginatedResponse } = require('../utils/pagination');
 
@@ -64,6 +65,11 @@ const remove = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
+const update = asyncHandler(async (req, res) => {
+  const job = await updateJob(req.user, req.validated.params.jobId, req.validated.body);
+  res.status(200).json({ success: true, data: { job } });
+});
+
 module.exports = {
   list,
   create,
@@ -71,5 +77,6 @@ module.exports = {
   logs,
   claim,
   requeue,
-  remove
+  remove,
+  update
 };

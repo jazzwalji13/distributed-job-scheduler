@@ -77,6 +77,37 @@ async function updateWorkerStatus(workerId, status) {
   });
 }
 
+async function updateWorker(workerId, updates) {
+  const worker = await prisma.worker.findUnique({ where: { id: workerId } });
+  if (!worker) {
+    throw new AppError('Worker not found', 404, 'WORKER_NOT_FOUND');
+  }
+
+  const allowed = {};
+  if (updates.name !== undefined) allowed.name = updates.name;
+  if (updates.host !== undefined) allowed.host = updates.host;
+  if (updates.capacity !== undefined) allowed.capacity = updates.capacity;
+  if (updates.version !== undefined) allowed.version = updates.version;
+
+  return prisma.worker.update({
+    where: { id: workerId },
+    data: allowed
+  });
+}
+
+async function deleteWorker(workerId) {
+  const worker = await prisma.worker.findUnique({ where: { id: workerId } });
+  if (!worker) {
+    throw new AppError('Worker not found', 404, 'WORKER_NOT_FOUND');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.workerHeartbeat.deleteMany({ where: { workerId } });
+    await tx.jobExecution.updateMany({ where: { workerId }, data: { workerId: null } });
+    return tx.worker.delete({ where: { id: workerId } });
+  });
+}
+
 async function deactivateStaleWorkers(timeoutMs = 60000) {
   const threshold = new Date(Date.now() - timeoutMs);
   return prisma.worker.updateMany({
@@ -95,5 +126,7 @@ module.exports = {
   updateHeartbeat,
   listWorkers,
   updateWorkerStatus,
+  updateWorker,
+  deleteWorker,
   deactivateStaleWorkers
 };

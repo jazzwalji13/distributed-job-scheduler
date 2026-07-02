@@ -6,9 +6,10 @@ const {
   workerHeartbeatSchema,
   workerListQuerySchema,
   workerIdParamSchema,
-  workerStatusSchema
+  workerStatusSchema,
+  updateWorkerSchema
 } = require('../utils/schemas');
-const { register, heartbeat, list, status } = require('../controllers/workerController');
+const { register, heartbeat, list, status, update, remove } = require('../controllers/workerController');
 
 const router = express.Router();
 
@@ -17,5 +18,7 @@ router.get('/', validate(workerListQuerySchema), requireRole('ADMIN', 'SUPER_ADM
 router.post('/register', validate(workerRegisterSchema), requireRole('ADMIN', 'SUPER_ADMIN'), register);
 router.post('/heartbeat', validate(workerHeartbeatSchema), heartbeat);
 router.patch('/:workerId/status', validate(workerStatusSchema), status);
+router.put('/:workerId', validate(updateWorkerSchema), requireRole('ADMIN', 'SUPER_ADMIN'), update);
+router.delete('/:workerId', validate(workerIdParamSchema), requireRole('ADMIN', 'SUPER_ADMIN'), remove);
 
 module.exports = router;
