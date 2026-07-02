@@ -78,11 +78,19 @@ const projectUpdateSchema = z.object({
     name: nameSchema.optional(),
     key: z.string().min(2).max(32).optional(),
     description: z.string().max(500).optional().nullable()
+  }).optional()
+});
+
+const projectParamsSchema = z.object({
+  params: z.object({
+    projectId: idSchema
   })
 });
 
-const projectListQuerySchema = paginationQuerySchema.extend({
-  organizationId: idSchema
+const projectListQuerySchema = z.object({
+  query: paginationQuerySchema.extend({
+    organizationId: idSchema
+  })
 });
 
 const queueSchema = z.object({
@@ -100,9 +108,11 @@ const queueSchema = z.object({
   })
 });
 
-const queueListQuerySchema = paginationQuerySchema.extend({
-  organizationId: idSchema,
-  projectId: idSchema.optional()
+const queueListQuerySchema = z.object({
+  query: paginationQuerySchema.extend({
+    organizationId: idSchema,
+    projectId: idSchema.optional()
+  })
 });
 
 const updateQueueSchema = z.object({
@@ -183,13 +193,15 @@ const claimJobsSchema = z.object({
   })
 });
 
-const jobListQuerySchema = paginationQuerySchema.extend({
-  status: z.enum(['QUEUED', 'SCHEDULED', 'CLAIMED', 'RUNNING', 'COMPLETED', 'FAILED', 'DEAD_LETTER']).optional(),
-  type: jobTypeSchema.optional(),
-  queueId: idSchema.optional(),
-  projectId: idSchema.optional(),
-  organizationId: idSchema,
-  search: z.string().max(200).optional()
+const jobListQuerySchema = z.object({
+  query: paginationQuerySchema.extend({
+    status: z.enum(['QUEUED', 'SCHEDULED', 'CLAIMED', 'RUNNING', 'COMPLETED', 'FAILED', 'DEAD_LETTER']).optional(),
+    type: jobTypeSchema.optional(),
+    queueId: idSchema.optional(),
+    projectId: idSchema.optional(),
+    organizationId: idSchema,
+    search: z.string().max(200).optional()
+  })
 });
 
 const jobParamsSchema = z.object({
@@ -212,8 +224,10 @@ const updateJobSchema = z.object({
   })
 });
 
-const deadLetterListQuerySchema = paginationQuerySchema.extend({
-  organizationId: idSchema
+const deadLetterListQuerySchema = z.object({
+  query: paginationQuerySchema.extend({
+    organizationId: idSchema
+  })
 });
 
 const deadLetterParamsSchema = z.object({
@@ -222,10 +236,12 @@ const deadLetterParamsSchema = z.object({
   })
 });
 
-const logListQuerySchema = paginationQuerySchema.extend({
-  organizationId: idSchema,
-  jobId: idSchema.optional(),
-  level: z.enum(['DEBUG', 'INFO', 'WARN', 'ERROR']).optional()
+const logListQuerySchema = z.object({
+  query: paginationQuerySchema.extend({
+    organizationId: idSchema,
+    jobId: idSchema.optional(),
+    level: z.enum(['DEBUG', 'INFO', 'WARN', 'ERROR']).optional()
+  })
 });
 
 const workerRegisterSchema = z.object({
@@ -253,8 +269,10 @@ const workerStatusSchema = z.object({
   })
 });
 
-const workerListQuerySchema = paginationQuerySchema.extend({
-  status: z.enum(['ONLINE', 'DRAINING', 'OFFLINE']).optional()
+const workerListQuerySchema = z.object({
+  query: paginationQuerySchema.extend({
+    status: z.enum(['ONLINE', 'DRAINING', 'OFFLINE']).optional()
+  })
 });
 
 const updateWorkerSchema = z.object({
@@ -286,6 +304,7 @@ module.exports = {
   organizationMemberSchema,
   projectSchema,
   projectUpdateSchema,
+  projectParamsSchema,
   projectListQuerySchema,
   queueSchema,
   queueListQuerySchema,
