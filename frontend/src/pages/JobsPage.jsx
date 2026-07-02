@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ResourcePage from './ResourcePage';
 import { Panel } from '../components/AppShell';
@@ -17,6 +17,8 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [projects, setProjects] = useState([]);
+const [queues, setQueues] = useState([]);
 
   const resetForm = () => {
     setForm({ projectId: '', queueId: '', type: 'IMMEDIATE', priority: '0', payload: '{}', runAt: '', maxAttempts: '3' });
@@ -105,6 +107,25 @@ export default function JobsPage() {
     { label: (row) => (row.status === 'FAILED' || row.status === 'DEAD_LETTER') ? 'Requeue' : null, onClick: handleRequeue },
     { label: 'Delete', tone: 'danger', onClick: handleDelete }
   ];
+  useEffect(() => {
+  async function loadData() {
+    try {
+      const [projectRes, queueRes] = await Promise.all([
+        api.get(`/projects?organizationId=${organizationId}`),
+        api.get(`/queues?organizationId=${organizationId}`)
+      ]);
+
+      setProjects(projectRes.data.items || []);
+      setQueues(queueRes.data.items || []);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  if (organizationId) {
+    loadData();
+  }
+}, [organizationId]);
 
   const statusColor = (status) => {
     const map = {
@@ -153,12 +174,49 @@ export default function JobsPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!editingJob && (
             <>
-              <FormField label="Project ID" required>
-                <TextInput value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })} required />
-              </FormField>
-              <FormField label="Queue ID" required>
-                <TextInput value={form.queueId} onChange={(e) => setForm({ ...form, queueId: e.target.value })} required />
-              </FormField>
+     <FormField label="Project" required>
+  <select
+    className="w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white"
+    value={form.projectId}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        projectId: e.target.value,
+        queueId: ""
+      })
+    }
+  >
+    <option value="">Select Project</option>
+
+    {projects.map((project) => (
+      <option key={project.id} value={project.id}>
+        {project.name} ({project.key})
+      </option>
+    ))}
+  </select>
+</FormField>
+<FormField label="Queue" required>
+  <select
+    className="w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white"
+    value={form.queueId}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        queueId: e.target.value
+      })
+    }
+  >
+    <option value="">Select Queue</option>
+
+    {queues
+      .filter((queue) => queue.projectId === form.projectId)
+      .map((queue) => (
+        <option key={queue.id} value={queue.id}>
+          {queue.name}
+        </option>
+      ))}
+  </select>
+</FormField>
             </>
           )}
           <div className="grid grid-cols-2 gap-4">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ResourcePage from './ResourcePage';
 import { Panel } from '../components/AppShell';
@@ -13,6 +13,7 @@ export default function QueuesPage() {
   const [form, setForm] = useState({ name: '', slug: '', projectId: '', description: '', priority: '0', concurrencyLimit: '5' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [projects, setProjects] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const resetForm = () => { setForm({ name: '', slug: '', projectId: '', description: '', priority: '0', concurrencyLimit: '5' }); setError(null); };
@@ -95,7 +96,20 @@ export default function QueuesPage() {
     { label: 'Edit', onClick: openEdit },
     { label: 'Delete', tone: 'danger', onClick: handleDelete }
   ];
+  useEffect(() => {
+  async function loadProjects() {
+    try {
+  const res = await api.get(`/projects?organizationId=${organizationId}`);
+setProjects(res.data.items || []);
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
+  if (organizationId) {
+    loadProjects();
+  }
+}, [organizationId]);
   if (!organizationId) {
     return (
       <Panel>
@@ -145,9 +159,27 @@ export default function QueuesPage() {
           <FormField label="Slug">
             <TextInput value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="Auto-generated from name" />
           </FormField>
-          <FormField label="Project ID" required>
-            <TextInput value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })} placeholder="Enter project ID" required={!editingQueue} disabled={!!editingQueue} />
-          </FormField>
+<FormField label="Project" required>
+  <select
+    className="w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white"
+    value={form.projectId}
+    disabled={!!editingQueue}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        projectId: e.target.value
+      })
+    }
+  >
+    <option value="">Select Project</option>
+
+    {projects.map((project) => (
+      <option key={project.id} value={project.id}>
+        {project.name} ({project.key})
+      </option>
+    ))}
+  </select>
+</FormField>
           <div className="grid grid-cols-2 gap-4">
             <FormField label="Priority">
               <TextInput value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} type="number" />
