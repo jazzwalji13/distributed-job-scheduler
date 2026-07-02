@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './src/context/AuthContext.jsx';
 
 const DashboardPage = lazy(() => import('./src/pages/DashboardPage.jsx'));
@@ -24,14 +24,8 @@ const navItems = [
   { to: '/settings', label: 'Settings' }
 ];
 
-function Shell({ children }) {
+function AppShell() {
   const { user, logout } = useAuth();
-  const location = useLocation();
-  const isAuthRoute = location.pathname === '/login' || location.pathname === '/register';
-
-  if (isAuthRoute) {
-    return children;
-  }
 
   return (
     <div className="min-h-screen app-grid text-slate-100">
@@ -48,6 +42,7 @@ function Shell({ children }) {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === '/'}
                 className={({ isActive }) =>
                   `rounded-2xl px-4 py-3 text-sm font-medium transition ${
                     isActive ? 'bg-cyan-400/15 text-cyan-200 shadow-glow' : 'text-slate-300 hover:bg-white/5 hover:text-white'
@@ -91,14 +86,14 @@ function Shell({ children }) {
             </div>
           </header>
 
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>
   );
 }
 
-function ProtectedRoute({ children }) {
+function ProtectedLayout() {
   const { token, loading } = useAuth();
 
   if (loading) {
@@ -109,7 +104,7 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <AppShell />;
 }
 
 export default function App() {
@@ -118,41 +113,18 @@ export default function App() {
       <BrowserRouter>
         <Suspense fallback={<div className="min-h-screen bg-ink-950 p-6 text-sm text-slate-300">Loading application...</div>}>
           <Routes>
-            <Route
-              path="/login"
-              element={
-                <Shell>
-                  <LoginPage />
-                </Shell>
-              }
-            />
-            <Route
-              path="/register"
-              element={
-                <Shell>
-                  <RegisterPage />
-                </Shell>
-              }
-            />
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <Shell>
-                    <Routes>
-                      <Route path="/" element={<DashboardPage />} />
-                      <Route path="/projects" element={<ProjectsPage />} />
-                      <Route path="/queues" element={<QueuesPage />} />
-                      <Route path="/jobs" element={<JobsPage />} />
-                      <Route path="/workers" element={<WorkersPage />} />
-                      <Route path="/dead-letter" element={<DeadLetterPage />} />
-                      <Route path="/logs" element={<LogsPage />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                    </Routes>
-                  </Shell>
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route element={<ProtectedLayout />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/queues" element={<QueuesPage />} />
+              <Route path="/jobs" element={<JobsPage />} />
+              <Route path="/workers" element={<WorkersPage />} />
+              <Route path="/dead-letter" element={<DeadLetterPage />} />
+              <Route path="/logs" element={<LogsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
           </Routes>
         </Suspense>
       </BrowserRouter>

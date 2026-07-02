@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api from '../api/client';
 
 const AuthContext = createContext(null);
@@ -7,8 +7,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('djs_token'));
   const [loading, setLoading] = useState(Boolean(token));
-  const currentOrganization = user?.ownedOrganizations?.[0] || user?.memberships?.[0]?.organization || null;
-  const currentOrganizationId = currentOrganization?.id || null;
 
   useEffect(() => {
     if (!token) {
@@ -16,45 +14,74 @@ export function AuthProvider({ children }) {
       return;
     }
 
+    let mounted = true;
+
     api
       .get('/auth/me')
       .then((response) => {
-        setUser(response.data.data.user);
+        if (mounted) {
+          setUser(response.data.data.user);
+        }
       })
       .catch(() => {
-        localStorage.removeItem('djs_token');
-        setToken(null);
-        setUser(null);
+        if (mounted) {
+          localStorage.removeItem('djs_token');
+          setToken(null);
+          setUser(null);
+        }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, [token]);
 
-  const login = async (payload) => {
+  const login = useCallback(async (payload) => {
     const response = await api.post('/auth/login', payload);
     const accessToken = response.data.data.accessToken;
     localStorage.setItem('djs_token', accessToken);
     setToken(accessToken);
     setUser(response.data.data.user);
     return response.data;
-  };
+  }, []);
 
-  const register = async (payload) => {
+  const register = useCallback(async (payload) => {
     const response = await api.post('/auth/register', payload);
     const accessToken = response.data.data.accessToken;
     localStorage.setItem('djs_token', accessToken);
     setToken(accessToken);
     setUser(response.data.data.user);
     return response.data;
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('djs_token');
     setToken(null);
     setUser(null);
-  };
+  }, []);
+
+  const currentOrganization = useMemo(
+    () => user?.ownedOrganizations?.[0] || user?.memberships?.[0]?.organization || null,
+    [user]
+  );
+
+  const currentOrganizationId = useMemo(
+    () => currentOrganization?.id || null,
+    [currentOrganization]
+  );
+
+  const value = useMemo(
+    () => ({ user, token, loading, currentOrganization, currentOrganizationId, login, register, logout }),
+    [user, token, loading, currentOrganization, currentOrganizationId, login, register, logout]
+  );
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, currentOrganization, currentOrganizationId, login, register, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

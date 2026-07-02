@@ -2,12 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import api from '../api/client';
 import { PageHeader, Panel, Table } from '../components/AppShell';
 
+const defaultTransform = (value) => value;
+
 export default function ResourcePage({
   title,
   description,
   endpoint,
   columns,
-  transform = (value) => value,
+  transform = defaultTransform,
   actions = []
 }) {
   const [rows, setRows] = useState([]);
