@@ -1,6 +1,39 @@
 const prisma = require('../models/prisma');
 const { AppError } = require('../utils/errors');
-const { hashPassword, verifyPassword, signAccessToken, createSlug, generateId } = require('../utils/security');
+const { hashPassword, verifyPassword, signAccessToken, createSlug } = require('../utils/security');
+
+const safeOrganizationSelect = {
+  id: true,
+  name: true,
+  slug: true,
+  ownerId: true,
+  createdAt: true,
+  updatedAt: true
+};
+
+const safeUserSelect = {
+  id: true,
+  email: true,
+  fullName: true,
+  role: true,
+  createdAt: true,
+  updatedAt: true,
+  memberships: {
+    select: {
+      id: true,
+      organizationId: true,
+      userId: true,
+      role: true,
+      createdAt: true,
+      organization: {
+        select: safeOrganizationSelect
+      }
+    }
+  },
+  ownedOrganizations: {
+    select: safeOrganizationSelect
+  }
+};
 
 async function buildUniqueOrganizationSlug(name) {
   const base = createSlug(name || 'organization');
@@ -55,14 +88,7 @@ async function register({ email, password, fullName, organizationName }) {
 
   const hydratedUser = await prisma.user.findUnique({
     where: { id: user.id },
-    include: {
-      memberships: {
-        include: {
-          organization: true
-        }
-      },
-      ownedOrganizations: true
-    }
+    select: safeUserSelect
   });
 
   return {
@@ -75,14 +101,7 @@ async function register({ email, password, fullName, organizationName }) {
 async function login({ email, password }) {
   const user = await prisma.user.findUnique({
     where: { email },
-    include: {
-      memberships: {
-        include: {
-          organization: true
-        }
-      },
-      ownedOrganizations: true
-    }
+    select: safeUserSelect
   });
 
   if (!user) {
@@ -109,14 +128,7 @@ async function login({ email, password }) {
 async function getCurrentUser(userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: {
-      memberships: {
-        include: {
-          organization: true
-        }
-      },
-      ownedOrganizations: true
-    }
+    select: safeUserSelect
   });
 
   if (!user) {

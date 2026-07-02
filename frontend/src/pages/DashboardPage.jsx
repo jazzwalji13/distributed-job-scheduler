@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import 'chart.js/auto';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import api from '../api/client';
@@ -9,21 +9,24 @@ import { Panel, PageHeader, StatCard, Table } from '../components/AppShell';
 function buildSeries(recentJobs) {
   const counts = new Map();
   recentJobs.forEach((job) => {
-    const key = new Date(job.createdAt).toLocaleDateString();
+    const date = new Date(job.createdAt);
+    const key = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
     counts.set(key, (counts.get(key) || 0) + 1);
   });
 
+  const entries = Array.from(counts.entries()).sort(([left], [right]) => Number(left) - Number(right));
+
   return {
-    labels: Array.from(counts.keys()),
-    values: Array.from(counts.values())
+    labels: entries.map(([timestamp]) => new Date(Number(timestamp)).toLocaleDateString()),
+    values: entries.map(([, value]) => value)
   };
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const organizationId = user?.ownedOrganizations?.[0]?.id || user?.memberships?.[0]?.organizationId;
+  const { currentOrganizationId: organizationId } = useAuth();
   const [metrics, setMetrics] = useState(null);
   const [error, setError] = useState(null);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
     if (!organizationId) {
@@ -37,6 +40,7 @@ export default function DashboardPage() {
         const response = await api.get(`/dashboard/metrics?organizationId=${organizationId}`);
         if (mounted) {
           setMetrics(response.data.data);
+          setError(null);
         }
       } catch (requestError) {
         if (mounted) {
@@ -45,18 +49,29 @@ export default function DashboardPage() {
       }
     };
 
+    const debouncedLoad = () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = setTimeout(() => {
+        if (mounted) {
+          load();
+        }
+      }, 1000);
+    };
+
     const socket = createSocket();
-    socket.on('connect', load);
-    socket.on('job.completed', load);
-    socket.on('job.failed', load);
-    socket.on('queue.updated', load);
-    socket.on('worker.heartbeat', load);
-    socket.on('disconnect', () => {});
+    socket.on('job.completed', debouncedLoad);
+    socket.on('job.failed', debouncedLoad);
+    socket.on('queue.updated', debouncedLoad);
 
     load();
 
     return () => {
       mounted = false;
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
       socket.disconnect();
     };
   }, [organizationId]);

@@ -3,8 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { PageHeader, Panel, StatCard } from '../components/AppShell';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
-  const organization = user?.ownedOrganizations?.[0] || user?.memberships?.[0]?.organization;
+  const { user, currentOrganization } = useAuth();
+  const organization = currentOrganization;
 
   return (
     <div className="space-y-5">

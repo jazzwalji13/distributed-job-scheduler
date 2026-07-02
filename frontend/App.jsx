@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './src/context/AuthContext.jsx';
-import DashboardPage from './src/pages/DashboardPage.jsx';
-import LoginPage from './src/pages/LoginPage.jsx';
-import RegisterPage from './src/pages/RegisterPage.jsx';
-import ProjectsPage from './src/pages/ProjectsPage.jsx';
-import QueuesPage from './src/pages/QueuesPage.jsx';
-import JobsPage from './src/pages/JobsPage.jsx';
-import WorkersPage from './src/pages/WorkersPage.jsx';
-import DeadLetterPage from './src/pages/DeadLetterPage.jsx';
-import LogsPage from './src/pages/LogsPage.jsx';
-import SettingsPage from './src/pages/SettingsPage.jsx';
+
+const DashboardPage = lazy(() => import('./src/pages/DashboardPage.jsx'));
+const LoginPage = lazy(() => import('./src/pages/LoginPage.jsx'));
+const RegisterPage = lazy(() => import('./src/pages/RegisterPage.jsx'));
+const ProjectsPage = lazy(() => import('./src/pages/ProjectsPage.jsx'));
+const QueuesPage = lazy(() => import('./src/pages/QueuesPage.jsx'));
+const JobsPage = lazy(() => import('./src/pages/JobsPage.jsx'));
+const WorkersPage = lazy(() => import('./src/pages/WorkersPage.jsx'));
+const DeadLetterPage = lazy(() => import('./src/pages/DeadLetterPage.jsx'));
+const LogsPage = lazy(() => import('./src/pages/LogsPage.jsx'));
+const SettingsPage = lazy(() => import('./src/pages/SettingsPage.jsx'));
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
@@ -115,43 +116,45 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              <Shell>
-                <LoginPage />
-              </Shell>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <Shell>
-                <RegisterPage />
-              </Shell>
-            }
-          />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
+        <Suspense fallback={<div className="min-h-screen bg-ink-950 p-6 text-sm text-slate-300">Loading application...</div>}>
+          <Routes>
+            <Route
+              path="/login"
+              element={
                 <Shell>
-                  <Routes>
-                    <Route path="/" element={<DashboardPage />} />
-                    <Route path="/projects" element={<ProjectsPage />} />
-                    <Route path="/queues" element={<QueuesPage />} />
-                    <Route path="/jobs" element={<JobsPage />} />
-                    <Route path="/workers" element={<WorkersPage />} />
-                    <Route path="/dead-letter" element={<DeadLetterPage />} />
-                    <Route path="/logs" element={<LogsPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                  </Routes>
+                  <LoginPage />
                 </Shell>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <Shell>
+                  <RegisterPage />
+                </Shell>
+              }
+            />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <Shell>
+                    <Routes>
+                      <Route path="/" element={<DashboardPage />} />
+                      <Route path="/projects" element={<ProjectsPage />} />
+                      <Route path="/queues" element={<QueuesPage />} />
+                      <Route path="/jobs" element={<JobsPage />} />
+                      <Route path="/workers" element={<WorkersPage />} />
+                      <Route path="/dead-letter" element={<DeadLetterPage />} />
+                      <Route path="/logs" element={<LogsPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                    </Routes>
+                  </Shell>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

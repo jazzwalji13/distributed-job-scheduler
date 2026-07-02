@@ -4,8 +4,7 @@ import ResourcePage from './ResourcePage';
 import { Panel } from '../components/AppShell';
 
 export default function ProjectsPage() {
-  const { user } = useAuth();
-  const organizationId = user?.ownedOrganizations?.[0]?.id || user?.memberships?.[0]?.organizationId;
+  const { currentOrganizationId: organizationId } = useAuth();
 
   if (!organizationId) {
     return (

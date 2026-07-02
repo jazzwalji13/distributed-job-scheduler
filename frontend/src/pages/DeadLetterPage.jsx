@@ -5,8 +5,7 @@ import { Panel } from '../components/AppShell';
 import api from '../api/client';
 
 export default function DeadLetterPage() {
-  const { user } = useAuth();
-  const organizationId = user?.ownedOrganizations?.[0]?.id || user?.memberships?.[0]?.organizationId;
+  const { currentOrganizationId: organizationId } = useAuth();
 
   if (!organizationId) {
     return (

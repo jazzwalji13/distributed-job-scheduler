@@ -7,6 +7,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('djs_token'));
   const [loading, setLoading] = useState(Boolean(token));
+  const currentOrganization = user?.ownedOrganizations?.[0] || user?.memberships?.[0]?.organization || null;
+  const currentOrganizationId = currentOrganization?.id || null;
 
   useEffect(() => {
     if (!token) {
@@ -52,7 +54,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, currentOrganization, currentOrganizationId, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

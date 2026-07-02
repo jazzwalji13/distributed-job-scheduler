@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import api from '../api/client';
 import { PageHeader, Panel, Table } from '../components/AppShell';
 
@@ -13,46 +13,51 @@ export default function ResourcePage({
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const isMountedRef = useRef(true);
   const loadRows = useCallback(() => {
-    let mounted = true;
-    setLoading(true);
+    setError(null);
 
     api
       .get(endpoint)
       .then((response) => {
-        if (!mounted) {
+        if (!isMountedRef.current) {
           return;
         }
 
         const items = response.data.items || response.data.data?.items || [];
         setRows(transform(items));
+        setError(null);
       })
       .catch((requestError) => {
-        if (!mounted) {
+        if (!isMountedRef.current) {
           return;
         }
         setError(requestError.response?.data?.error?.message || requestError.message);
       })
       .finally(() => {
-        if (mounted) {
+        if (isMountedRef.current) {
           setLoading(false);
         }
       });
-
-    return () => {
-      mounted = false;
-    };
   }, [endpoint, transform]);
 
   useEffect(() => {
-    const cleanup = loadRows();
-    return cleanup;
+    isMountedRef.current = true;
+    loadRows();
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [loadRows]);
 
   const handleAction = async (action, row) => {
-    await action.onClick(row);
-    await loadRows();
+    try {
+      setError(null);
+      await action.onClick(row);
+      await loadRows();
+    } catch (requestError) {
+      setError(requestError.response?.data?.error?.message || requestError.message);
+    }
   };
 
   const tableColumns = [
@@ -89,9 +94,15 @@ export default function ResourcePage({
     <div className="space-y-5">
       <PageHeader title={title} description={description} />
       <Panel>
-        {loading ? <div className="text-sm text-slate-400">Loading...</div> : null}
         {error ? <div className="mb-4 rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div> : null}
-        {!loading ? <Table columns={tableColumns} rows={rows} emptyMessage={`No ${title.toLowerCase()} found`} /> : null}
+        {loading && rows.length === 0 ? (
+          <div className="text-sm text-slate-400">Loading...</div>
+        ) : (
+          <div>
+            {loading ? <div className="mb-3 text-xs text-slate-500">Refreshing...</div> : null}
+            <Table columns={tableColumns} rows={rows} emptyMessage={`No ${title.toLowerCase()} found`} />
+          </div>
+        )}
       </Panel>
     </div>
   );
