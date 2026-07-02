@@ -16,7 +16,7 @@ function createApp() {
   app.use(cors({ origin: config.corsOrigin === '*' ? true : config.corsOrigin, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
-  // app.use(rateLimit());
+  app.use(rateLimit({ windowMs: 60000, maxRequests: 300 }));
 
   app.use((req, res, next) => {
     logger.info('http-request', {

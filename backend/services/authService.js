@@ -101,7 +101,7 @@ async function register({ email, password, fullName, organizationName }) {
 async function login({ email, password }) {
   const user = await prisma.user.findUnique({
     where: { email },
-    select: safeUserSelect
+    select: { ...safeUserSelect, passwordHash: true }
   });
 
   if (!user) {
@@ -113,6 +113,8 @@ async function login({ email, password }) {
     throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
   }
 
+  const { passwordHash: _, ...safeUser } = user;
+
   const accessToken = signAccessToken({
     sub: user.id,
     email: user.email,
@@ -120,7 +122,7 @@ async function login({ email, password }) {
   });
 
   return {
-    user,
+    user: safeUser,
     accessToken
   };
 }

@@ -27,36 +27,31 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState(null);
   const [error, setError] = useState(null);
   const debounceRef = useRef(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    if (!organizationId) {
-      return undefined;
-    }
+    if (!organizationId) return undefined;
 
-    let mounted = true;
+    mountedRef.current = true;
 
     const load = async () => {
       try {
         const response = await api.get(`/dashboard/metrics?organizationId=${organizationId}`);
-        if (mounted) {
+        if (mountedRef.current) {
           setMetrics(response.data.data);
           setError(null);
         }
       } catch (requestError) {
-        if (mounted) {
+        if (mountedRef.current) {
           setError(requestError.response?.data?.error?.message || requestError.message);
         }
       }
     };
 
     const debouncedLoad = () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        if (mounted) {
-          load();
-        }
+        if (mountedRef.current) load();
       }, 1000);
     };
 
@@ -64,14 +59,17 @@ export default function DashboardPage() {
     socket.on('job.completed', debouncedLoad);
     socket.on('job.failed', debouncedLoad);
     socket.on('queue.updated', debouncedLoad);
+    socket.on('job.created', debouncedLoad);
 
     load();
 
     return () => {
-      mounted = false;
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
+      mountedRef.current = false;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      socket.off('job.completed', debouncedLoad);
+      socket.off('job.failed', debouncedLoad);
+      socket.off('queue.updated', debouncedLoad);
+      socket.off('job.created', debouncedLoad);
       socket.disconnect();
     };
   }, [organizationId]);
@@ -95,63 +93,52 @@ export default function DashboardPage() {
 
   const lineData = {
     labels: series.labels,
-    datasets: [
-      {
-        label: 'Jobs created',
-        data: series.values,
-        borderColor: '#22d3ee',
-        backgroundColor: 'rgba(34, 211, 238, 0.18)',
-        tension: 0.35,
-        fill: true
-      }
-    ]
+    datasets: [{
+      label: 'Jobs created',
+      data: series.values,
+      borderColor: '#22d3ee',
+      backgroundColor: 'rgba(34, 211, 238, 0.18)',
+      tension: 0.35,
+      fill: true
+    }]
   };
 
   const doughnutData = {
     labels: ['Queued', 'Scheduled', 'Running', 'Completed', 'Failed'],
-    datasets: [
-      {
-        data: [stats.queued || 0, stats.scheduled || 0, stats.running || 0, stats.completed || 0, stats.failed || 0],
-        backgroundColor: ['#22d3ee', '#f97316', '#34d399', '#93c5fd', '#fb7185'],
-        borderWidth: 0
-      }
-    ]
+    datasets: [{
+      data: [stats.queued || 0, stats.scheduled || 0, stats.running || 0, stats.completed || 0, stats.failed || 0],
+      backgroundColor: ['#22d3ee', '#f97316', '#34d399', '#93c5fd', '#fb7185'],
+      borderWidth: 0
+    }]
   };
 
   const workerData = {
     labels: ['Online', 'Draining', 'Offline'],
-    datasets: [
-      {
-        label: 'Workers',
-        data: [workers.online || 0, workers.draining || 0, workers.offline || 0],
-        backgroundColor: ['#34d399', '#f97316', '#fb7185']
-      }
-    ]
+    datasets: [{
+      label: 'Workers',
+      data: [workers.online || 0, workers.draining || 0, workers.offline || 0],
+      backgroundColor: ['#34d399', '#f97316', '#fb7185']
+    }]
   };
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="Dashboard"
-        description="Queue health, worker status, running jobs, completed jobs, and retry pressure at a glance."
-      />
+      <PageHeader title="Dashboard" description="Queue health, worker status, running jobs, completed jobs, and retry pressure at a glance." />
 
-      {error ? <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div> : null}
+      {error && <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div>}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Active Queues" value={queueHealth.active || 0} hint="Available for polling" tone="cyan" />
         <StatCard label="Running Jobs" value={stats.running || 0} hint="Currently executing" tone="amber" />
         <StatCard label="Completed Jobs" value={stats.completed || 0} hint="Successfully finished" tone="emerald" />
-        <StatCard label="Failed Jobs" value={stats.failed || 0} hint="Moved to retry or dead letter" tone="rose" />
+        <StatCard label="Failed Jobs" value={(stats.failed || 0) + (stats.deadLetter || 0)} hint="Failed or dead-lettered" tone="rose" />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-3">
         <Panel className="xl:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <div className="text-sm font-semibold text-white">Throughput trend</div>
-              <div className="text-xs uppercase tracking-[0.28em] text-slate-400">Recent job creation</div>
-            </div>
+          <div className="mb-4">
+            <div className="text-sm font-semibold text-white">Throughput trend</div>
+            <div className="text-xs uppercase tracking-[0.28em] text-slate-400">Recent job creation</div>
           </div>
           <div className="h-[320px]">
             <Line data={lineData} options={{ responsive: true, maintainAspectRatio: false }} />
@@ -181,11 +168,9 @@ export default function DashboardPage() {
         </Panel>
 
         <Panel className="xl:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <div className="text-sm font-semibold text-white">System metrics</div>
-              <div className="text-xs uppercase tracking-[0.28em] text-slate-400">Queue and execution summary</div>
-            </div>
+          <div className="mb-4">
+            <div className="text-sm font-semibold text-white">System metrics</div>
+            <div className="text-xs uppercase tracking-[0.28em] text-slate-400">Queue and execution summary</div>
           </div>
           <Table
             columns={[
@@ -196,7 +181,7 @@ export default function DashboardPage() {
               { id: 'queued', metric: 'Queued', value: stats.queued || 0 },
               { id: 'scheduled', metric: 'Scheduled', value: stats.scheduled || 0 },
               { id: 'claimed', metric: 'Claimed', value: stats.claimed || 0 },
-              { id: 'retry', metric: 'Retry count', value: metrics?.jobCounts?.retryCount || 0 },
+              { id: 'retry', metric: 'Retry count', value: stats.scheduled || 0 },
               { id: 'workers', metric: 'Online workers', value: workers.online || 0 },
               { id: 'paused', metric: 'Paused queues', value: queueHealth.paused || 0 }
             ]}
