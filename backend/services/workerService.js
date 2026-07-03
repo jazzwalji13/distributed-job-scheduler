@@ -44,6 +44,7 @@ async function updateHeartbeat(workerId, payload = {}) {
 
 async function listWorkers(pagination, filters = {}) {
   const where = {};
+
   if (filters.status) {
     where.status = filters.status;
   }
@@ -66,6 +67,16 @@ async function listWorkers(pagination, filters = {}) {
       }
     })
   ]);
+
+  console.log("Workers from DB:");
+  console.table(
+    items.map((w) => ({
+      id: w.id,
+      name: w.name,
+      host: w.host,
+      status: w.status
+    }))
+  );
 
   return { total, items };
 }

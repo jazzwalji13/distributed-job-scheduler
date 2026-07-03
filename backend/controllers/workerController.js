@@ -10,6 +10,7 @@ const {
 const { parsePagination, buildPaginatedResponse } = require('../utils/pagination');
 
 const register = asyncHandler(async (req, res) => {
+  console.log("REGISTER BODY:", req.validated.body);
   const worker = await registerWorker(req.validated.body);
   const io = req.app.get('io');
   if (io) {

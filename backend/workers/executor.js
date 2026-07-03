@@ -78,11 +78,19 @@ const handlers = {
 };
 
 async function executeJob(job) {
-  const payload = job.payload || {};
-  const handlerName = String(payload.handler || payload.action || 'noop').toLowerCase();
-  const handler = handlers[handlerName] || handlers.noop;
+    const payload = job.payload || {};
 
-  return handler(payload, job);
+    if (payload.fail === true) {
+        throw new Error("Intentional failure");
+    }
+
+    const handlerName = String(
+        payload.handler || payload.action || "noop"
+    ).toLowerCase();
+
+    const handler = handlers[handlerName] || handlers.noop;
+
+    return handler(payload, job);
 }
 
 module.exports = {

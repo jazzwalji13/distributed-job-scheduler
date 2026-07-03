@@ -12,5 +12,8 @@
     "dev:scheduler": "npm --prefix backend run scheduler",
     "test:backend": "npm --prefix backend run test",
     "dev:frontend": "npm --prefix frontend run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }
